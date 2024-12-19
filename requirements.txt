@@ -1,0 +1,98 @@
+// components/
+├── Layout/
+│   ├── Header.tsx
+│   ├── Footer.tsx
+│   └── Sidebar.tsx
+├── Effects/
+│   ├── EffectList.tsx
+│   ├── EffectCard.tsx
+│   └── EffectDetail.tsx
+└── Common/
+    ├── Button.tsx
+    ├── Input.tsx
+    └── Loading.tsx
+// pages/
+├── index.tsx
+├── effects/
+│   ├── index.tsx
+│   └── [id].tsx
+├── dashboard/
+│   └── index.tsx
+└── api/
+    └── effects.ts
+dependencies:
+  next: '^13.0.0'
+  react: '^18.2.0'
+  react-dom: '^18.2.0'
+  axios: '^1.3.0'
+  @mui/material: '^5.0.0'
+  @emotion/react: '^11.0.0'
+  @emotion/styled: '^11.0.0'
+  swr: '^2.0.0'
+export const fetchEffects = async () => {
+  const response = await axios.get('/api/effects');
+  return response.data;
+};
+// pages/api/effects.ts
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  const effects = await fetchEffectsFromBackend();
+  res.status(200).json(effects);
+}
+// types/Effect.ts
+export interface Effect {
+  id: string;
+  name: string;
+  type: string;
+  parameters: {
+    color: string;
+    duration: number;
+    intensity: number;
+  };
+}
+// store/effectStore.ts
+export const useEffectStore = create((set) => ({
+  effects: [],
+  setEffects: (effects) => set({ effects }),
+  addEffect: (effect) => set((state) => ({ 
+    effects: [...state.effects, effect] 
+  })),
+}));
+NEXT_PUBLIC_API_URL=http://localhost:8000
+NEXT_PUBLIC_WS_URL=ws://localhost:8000/ws
+yarn dev
+devDependencies:
+  jest: '^29.0.0'
+  @testing-library/react: '^13.0.0'
+  @testing-library/jest-dom: '^5.16.0'
+  cypress: '^12.0.0'
+├── __tests__/
+│   ├── components/
+│   └── pages/
+└── cypress/
+    └── integration/
+name: CI/CD Pipeline
+on: [push, pull_request]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+      - name: Install dependencies
+        run: yarn install
+      - name: Run tests
+        run: yarn test
+      - name: Build
+        run: yarn build
+production:
+  NODE_ENV: production
+  API_URL: https://api.minecraft-effects.com
+  WS_URL: wss://api.minecraft-effects.com/ws
+FROM node:16-alpine
+WORKDIR /app
+COPY package.json yarn.lock ./
+RUN yarn install --frozen-lockfile
+COPY . .
+RUN yarn build
+CMD ["yarn", "start"]
